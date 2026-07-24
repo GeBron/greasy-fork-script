@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         虎扑：手机版自动跳转网页版 + 回帖表情包自动缩小
-// @version      2.0
+// @version      1.0
 // @description  兼容 Google 搜索链接与 App 分享链接自动跳转 PC 网页版；在网页版中仅缩小回帖表情包，主帖图片保持不变
 // @author       GeBron
 // @match        *://m.hupu.com/bbs-share/*

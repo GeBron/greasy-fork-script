@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub RSS & Inoreader Helper
 // @namespace    http://tampermonkey.net/
-// @version      1.3
+// @version      1.0
 // @description  兼容 GitHub 2026 最新 UI
 // @author       GeBron
 // @match        https://github.com/*/*

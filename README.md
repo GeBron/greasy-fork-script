@@ -8,10 +8,10 @@
 |------|------|----------|----------|
 | [4d4y-newbab.js](./4d4y-newbab.js) | 1.0 | 4d4y 论坛 | 帖子标题点击新标签页打开 |
 | [cnblogs-plus.js](./cnblogs-plus.js) | 1.0 | 博客园 | 自动展开代码块 + 标题新标签页打开 |
-| [github-rss-inoreader-helper.js](./github-rss-inoreader-helper.js) | 1.3 | GitHub | 仓库侧边栏注入 RSS 订阅按钮，支持一键导入 Inoreader |
-| [hupu-plus.js](./hupu-plus.js) | 2.0 | 虎扑 | 手机版自动跳转网页版 + 回帖表情包自动缩小 |
-| [x-bird-logo.js](./x-bird-logo.js) | 1.0.0 | X (Twitter) | 修复用户名小鸟图标无法显示的问题 |
-| [x-time.js](./x-time.js) | 2.0 | X (Twitter) | 动态时间格式化（今天/今年/往年） |
+| [github-rss-inoreader-helper.js](./github-rss-inoreader-helper.js) | 1.0 | GitHub | 仓库侧边栏注入 RSS 订阅按钮，支持一键导入 Inoreader |
+| [hupu-plus.js](./hupu-plus.js) | 1.0 | 虎扑 | 手机版自动跳转网页版 + 回帖表情包自动缩小 |
+| [x-bird-logo.js](./x-bird-logo.js) | 1.0 | X (Twitter) | 修复用户名小鸟图标无法显示的问题 |
+| [x-time.js](./x-time.js) | 1.0 | X (Twitter) | 动态时间格式化（今天/今年/往年） |
 
 ## 安装方式
 

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         X (Twitter) 动态时间格式化
 // @namespace    http://tampermonkey.net/
-// @version      2.0
+// @version      1.0
 // @description  根据日期智能显示时间：今天(HH:mm)、今年(MM-DD HH:mm)、往年(YYYY-MM-DD HH:mm)，并自动修正 X 客户端把时间重写回相对格式的问题
 // @author       GeBron
 // @match        https://x.com/*

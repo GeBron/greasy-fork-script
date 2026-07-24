@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         X (Twitter) 官方小鸟图标修复 / Chirp Bird Glyph Fix
 // @namespace    https://greasyfork.org/users/twitter-bird-fix
-// @version      1.0.0
+// @version      1.0
 // @description  修复部分系统(如 Windows)上无法显示的用户名小鸟图标(U+EA00 私有区字符),通过引用 X 官方 Chirp 字体还原真实图标
 // @author       GeBron
 // @match        https://x.com/*
