@@ -2,7 +2,7 @@
 // @name         GitHub RSS & Inoreader Helper
 // @namespace    http://tampermonkey.net/
 // @version      1.3
-// @description  兼容 GitHub 2026 最新 UI（SplitPageLayout 结构），添加分割线并优化视觉效果（修复子页面误判、异步复制、监听范围过大、侧边栏选择器失效等问题）
+// @description  兼容 GitHub 2026 最新 UI
 // @author       GeBron
 // @match        https://github.com/*/*
 // @grant        GM_setValue
