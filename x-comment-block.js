@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         X.com 评论屏蔽词过滤
 // @namespace    http://tampermonkey.net/
-// @version      2.1
+// @version      1.0
 // @description  仅在推文详情页屏蔽包含自定义关键词的评论，并支持一键真正屏蔽用户
-// @author       You
+// @author       GeBron
 // @match        https://x.com/*/status/*
 // @match        https://twitter.com/*/status/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=x.com
