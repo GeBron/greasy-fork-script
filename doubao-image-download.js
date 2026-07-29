@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         豆包/Dola 无水印图片下载
 // @namespace    http://tampermonkey.net/
-// @version      1.0
+// @version      1.1
 // @description  为豆包与国际版 Dola 提供无水印图片下载（悬停按钮 + 右键菜单）
 // @author       adapted from Qalxry
 // @license      GPL-3.0
@@ -122,6 +122,7 @@
       return;
     }
     for (const k of Object.keys(value).slice(0, 40)) {
+      if (/^(children|ref|_owner|stateNode|memoizedState)$/.test(k)) continue;
       if (!/image|img|preview|download|thumb|ori|raw|real|content|creation|props|data|list|item/i.test(k)) continue;
       const c = value[k];
       if (isObj(c) && typeof c !== "function") scanProps(c, out, depth + 1, seen);
@@ -272,23 +273,38 @@
     });
   }
 
+  function removeWatermarkParam(urlStr) {
+    if (!urlStr || typeof urlStr !== "string") return urlStr;
+    try {
+      const u = new URL(urlStr);
+      ["watermark", "wm", "mark", "watermark_type"].forEach(k => u.searchParams.delete(k));
+      u.pathname = u.pathname.replace(/(~tplv-[^~]+?)(:watermark[^\/~]*)/gi, "$1");
+      return u.toString();
+    } catch {
+      return urlStr.replace(/([?&])(watermark|wm|mark)=[^&]*/gi, "");
+    }
+  }
+
   async function mergeImages(blobA, blobB) {
     const ua = URL.createObjectURL(blobA), ub = URL.createObjectURL(blobB);
     try {
       return await new Promise((resolve, reject) => {
         const a = new Image(), b = new Image();
-        let n = 0;
+        let loadedCount = 0;
         const done = () => {
-          if (++n < 2) return;
+          if (++loadedCount < 2) return;
           try {
-            const w = a.naturalWidth, h = a.naturalHeight;
+            const targetW = a.naturalWidth, targetH = a.naturalHeight;
             const c = document.createElement("canvas");
-            c.width = w; c.height = h;
+            c.width = targetW; c.height = targetH;
             const ctx = c.getContext("2d");
-            ctx.drawImage(a, 0, 0, w, h);
-            const qw = Math.ceil(w / 2), qh = Math.ceil(h / 2);
+            ctx.drawImage(a, 0, 0, targetW, targetH);
+            const qw = Math.ceil(targetW / 2), qh = Math.ceil(targetH / 2);
             ctx.clearRect(0, 0, qw, qh);
-            ctx.drawImage(b, 0, 0, qw, qh, 0, 0, qw, qh);
+
+            const srcBw = Math.ceil(b.naturalWidth / 2);
+            const srcBh = Math.ceil(b.naturalHeight / 2);
+            ctx.drawImage(b, 0, 0, srcBw, srcBh, 0, 0, qw, qh);
             c.toBlob(blob => blob ? resolve(blob) : reject(new Error("toBlob失败")), "image/png");
           } catch (e) { reject(e); }
         };
@@ -303,11 +319,19 @@
     }
   }
 
-  function saveBlob(blob, name) {
+  function saveBlob(blob, namePrefix = "nowm") {
+    const mimeMap = {
+      "image/jpeg": ".jpg",
+      "image/png": ".png",
+      "image/webp": ".webp",
+      "image/gif": ".gif",
+      "image/avif": ".avif"
+    };
+    const ext = (blob && mimeMap[blob.type]) || ".png";
     const u = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = u;
-    a.download = name || `nowm-${Date.now()}.png`;
+    a.download = `${namePrefix}-${Date.now()}${ext}`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(u), 4000);
   }
@@ -317,7 +341,7 @@
     if (!el) {
       el = document.createElement("div");
       el.id = "nomark-toast";
-      el.style.cssText = "position:fixed;bottom:72px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 16px;border-radius:8px;z-index:2147483647;font-size:13px;pointer-events:none;transition:opacity .2s;max-width:80vw;text-align:center";
+      el.style.cssText = "position:fixed;bottom:72px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 16px;border-radius:8px;z-index:2147483647;font-size:13px;font-family:system-ui,-apple-system,sans-serif;pointer-events:none;transition:opacity .2s;max-width:80vw;text-align:center";
       document.body.appendChild(el);
     }
     el.textContent = msg;
@@ -334,29 +358,25 @@
     toast("处理中…");
     try {
       if (direct && isDirectOk(direct)) {
-        const blob = await gmBlob(direct);
-        saveBlob(blob, `nowm-direct-${Date.now()}.png`);
+        const cleanUrl = removeWatermarkParam(direct);
+        const blob = await gmBlob(cleanUrl);
+        saveBlob(blob, "nowm-direct");
         toast("已下载（直链）");
         return;
       }
       if (info.sameUrl || info.previewImage.url === info.downloadImage?.url) {
-        let url = info.previewImage.url;
-        try {
-          const u = new URL(url);
-          ["watermark", "wm", "mark"].forEach(k => u.searchParams.delete(k));
-          url = u.toString();
-        } catch {}
+        const url = removeWatermarkParam(info.previewImage.url);
         const blob = await gmBlob(url);
-        saveBlob(blob, `nowm-${Date.now()}.png`);
+        saveBlob(blob, "nowm");
         toast("已下载");
         return;
       }
       const [ba, bb] = await Promise.all([
-        gmBlob(info.previewImage.url),
-        gmBlob(info.downloadImage.url),
+        gmBlob(removeWatermarkParam(info.previewImage.url)),
+        gmBlob(removeWatermarkParam(info.downloadImage.url)),
       ]);
       const merged = await mergeImages(ba, bb);
-      saveBlob(merged, `nowm-merge-${Date.now()}.png`);
+      saveBlob(merged, "nowm-merge");
       toast("已下载（重叠去水印）");
     } catch (e) {
       console.warn("[无水印] 下载失败", e);
@@ -375,9 +395,10 @@
     hoverBtn.type = "button";
     hoverBtn.textContent = "⬇ 无水印";
     hoverBtn.style.cssText = [
-      "position:fixed", "z-index:2147483646", "display:none",
+      "all:initial", "position:fixed", "z-index:2147483646", "display:none",
       "padding:6px 12px", "border:none", "border-radius:8px",
       "background:#ff4d4f", "color:#fff", "font-size:13px", "font-weight:600",
+      "font-family:system-ui, -apple-system, sans-serif",
       "cursor:pointer", "box-shadow:0 4px 14px rgba(0,0,0,.25)",
       "pointer-events:auto", "user-select:none",
     ].join(";");
@@ -444,21 +465,8 @@
   }, true);
 
   let lastCtxInfo = null;
-  let lastCtxAt = 0;
-  let lastHadImg = false;
-
-  document.addEventListener("contextmenu", e => {
-    const media = e.target.closest?.("img,canvas");
-    if (!media && !isCandidateMedia(e.target)) {
-      lastHadImg = false;
-      return;
-    }
-    lastHadImg = true;
-    const el = media || e.target;
-    const active = findActivePreviewImage(el) || el;
-    lastCtxInfo = resolveInfo(active);
-    lastCtxAt = Date.now();
-  }, true);
+  let activeObserver = null;
+  let observerTimer = null;
 
   function visible(el) {
     return !!(el && (el.offsetParent !== null || el.getClientRects().length));
@@ -474,23 +482,48 @@
     return hit.at(-1) || cands.at(-1) || null;
   }
 
-  new MutationObserver(() => {
-    if (!lastHadImg && Date.now() - lastCtxAt > 2000) return;
-    const menu = findMenuRoot();
-    if (!menu || menu.querySelector(".tm-no-watermark-btn")) return;
-    const btn = document.createElement("div");
-    btn.className = "tm-no-watermark-btn";
-    btn.style.cssText = "color:#ff4d4f;cursor:pointer;padding:8px 12px;font-size:14px;";
-    btn.textContent = "下载无水印原图";
-    btn.addEventListener("click", ev => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      try { menu.style.display = "none"; } catch {}
-      if (lastCtxInfo) doDownload(lastCtxInfo.info, lastCtxInfo.direct);
-      else toast("未捕获到图片");
+  document.addEventListener("contextmenu", e => {
+    const media = e.target.closest?.("img,canvas");
+    if (!media && !isCandidateMedia(e.target)) return;
+
+    const el = media || e.target;
+    const active = findActivePreviewImage(el) || el;
+    lastCtxInfo = resolveInfo(active);
+
+    if (activeObserver) activeObserver.disconnect();
+    clearTimeout(observerTimer);
+
+    activeObserver = new MutationObserver(() => {
+      const menu = findMenuRoot();
+      if (!menu || menu.querySelector(".tm-no-watermark-btn")) return;
+      const btn = document.createElement("div");
+      btn.className = "tm-no-watermark-btn";
+      btn.style.cssText = "color:#ff4d4f;cursor:pointer;padding:8px 12px;font-size:14px;font-family:system-ui,-apple-system,sans-serif;";
+      btn.textContent = "下载无水印原图";
+      btn.addEventListener("click", ev => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        try { menu.style.display = "none"; } catch {}
+        if (lastCtxInfo) doDownload(lastCtxInfo.info, lastCtxInfo.direct);
+        else toast("未捕获到图片");
+      });
+      menu.appendChild(btn);
+
+      if (activeObserver) {
+        activeObserver.disconnect();
+        activeObserver = null;
+      }
     });
-    menu.appendChild(btn);
-  }).observe(document.documentElement, { childList: true, subtree: true });
+
+    activeObserver.observe(document.documentElement, { childList: true, subtree: true });
+
+    observerTimer = setTimeout(() => {
+      if (activeObserver) {
+        activeObserver.disconnect();
+        activeObserver = null;
+      }
+    }, 2000);
+  }, true);
 
   function addBadge() {
     if (document.getElementById("nomark-badge")) return;
@@ -503,3 +536,4 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", addBadge);
   else addBadge();
 })();
+
