@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         博客园体验增强 (Cnblogs Plus)
 // @namespace    http://tampermonkey.net/
-// @version      1.1
+// @version      1.2
 // @description  自动展开博客园折叠的代码块，并使文章标题链接在点击时于新标签页打开
 // @author       GeBron
 // @match        *://www.cnblogs.com/*
@@ -16,22 +16,31 @@
     // 功能一：自动展开折叠状态的代码块
     // ---------------------------------------------------------------
     function expandCode() {
-        const expandButtons = document.querySelectorAll('.code_img_closed, .cnblogs_code_hide');
-        expandButtons.forEach(btn => {
-            if (btn.classList.contains('code_img_closed')) {
-                btn.click();
-                btn.classList.replace('code_img_closed', 'code_img_opened');
-            } else if (btn.classList.contains('cnblogs_code_hide')) {
-                btn.click();
-                btn.classList.remove('cnblogs_code_hide');
+        // 遍历所有代码块容器
+        const containers = document.querySelectorAll('.cnblogs_code');
+
+        containers.forEach(container => {
+            // 1. 处理旧版图标按钮（.code_img_closed）
+            const oldIconBtn = container.querySelector('.code_img_closed:not([data-cnblogs-plus-expanded])');
+            if (oldIconBtn) {
+                oldIconBtn.setAttribute('data-cnblogs-plus-expanded', 'true');
+                oldIconBtn.click();
+                return; // 每个代码块容器仅触发一次，防止重复
+            }
+
+            // 2. 处理新版文字链接按钮（.cnblogs_code_hide）
+            const newTextBtn = container.querySelector('.cnblogs_code_hide:not([data-cnblogs-plus-expanded])');
+            if (newTextBtn) {
+                newTextBtn.setAttribute('data-cnblogs-plus-expanded', 'true');
+                newTextBtn.click();
+                return;
             }
         });
     }
 
     // ---------------------------------------------------------------
     // 功能二：文章标题新标签页打开
-    // 注意：博客园官方首页（www.cnblogs.com/ 或 www.cnblogs.com）
-    // 不是博主个人主页，这里跳过该功能，但代码展开功能仍然生效
+    // 说明：博客园官方首页跳过该逻辑，但代码展开逻辑仍会生效
     // ---------------------------------------------------------------
     const isCnblogsHomePage = /^\/?$/.test(location.pathname);
 
@@ -61,7 +70,7 @@
     }
 
     // ---------------------------------------------------------------
-    // 简单防抖，避免 MutationObserver 在短时间内被高频触发
+    // 防抖逻辑：避免 MutationObserver 高频触发
     // ---------------------------------------------------------------
     function debounce(fn, wait) {
         let timer = null;
@@ -74,18 +83,22 @@
     const debouncedRunAll = debounce(runAll, 300);
 
     // ---------------------------------------------------------------
-    // 初始化
+    // 初始化与页面监听
     // ---------------------------------------------------------------
     runAll();
     window.addEventListener('load', runAll);
 
+    // 监听 DOM 动态变更（覆盖异步渲染与动态加载内容）
     const observer = new MutationObserver(debouncedRunAll);
-    observer.observe(document.body || document.documentElement, {
-        childList: true,
-        subtree: true
-    });
+    const targetNode = document.body || document.documentElement;
+    if (targetNode) {
+        observer.observe(targetNode, {
+            childList: true,
+            subtree: true
+        });
+    }
 
-    // 兜底：有限次数轮询，覆盖延迟渲染/异步代码块
+    // 有限次数轮询兜底
     let count = 0;
     const timer = setInterval(() => {
         runAll();
