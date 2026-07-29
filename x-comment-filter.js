@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         X.com 评论屏蔽词过滤
+// @name         X (Twitter) 评论关键词过滤与一键屏蔽
 // @namespace    http://tampermonkey.net/
-// @version      1.0
-// @description  仅在推文详情页屏蔽包含自定义关键词的评论，并支持一键真正屏蔽用户
+// @version      1.1
+// @description  按用户名或评论内容关键词隐蔽 X (Twitter) 评论，提供悬浮管理面板并支持一键发起 API 真正的用户屏蔽
 // @author       GeBron
 // @match        https://x.com/*/status/*
 // @match        https://twitter.com/*/status/*
@@ -34,7 +34,6 @@
     }
 
     // ==================== 已"真正屏蔽"的用户记录 ====================
-    // 避免：真正屏蔽某用户后，再次点击"显示当前匹配用户"时又把他重新列出来
     const REALLY_BLOCKED_KEY = 'x_comment_really_blocked_users_v1';
 
     function loadReallyBlocked() {
@@ -125,7 +124,6 @@
         const userNameEl = article.querySelector('[data-testid="User-Name"]');
         let userText = userNameEl ? (userNameEl.innerText || userNameEl.textContent || '') : '';
 
-        // 已经"真正屏蔽"过的用户，直接判定为需要隐藏
         const handleMatch = userText.match(/@(\w+)/);
         if (handleMatch && reallyBlockedHandles.has(handleMatch[1])) {
             return true;
@@ -147,7 +145,6 @@
         return false;
     }
 
-    // 更新按钮颜色提示
     function updateButtonColor(hasBlocked) {
         const btn = document.getElementById('x-block-btn');
         if (!btn) return;
@@ -155,12 +152,10 @@
         hasBlockedOnPage = hasBlocked;
 
         if (hasBlocked) {
-            // 有被屏蔽的评论 → 红色提示
             btn.style.background = '#f4212e';
             btn.style.color = '#ffffff';
             btn.title = '当前页面有评论被屏蔽（点击管理）';
         } else {
-            // 没有 → 恢复白色
             btn.style.background = '#ffffff';
             btn.style.color = '#0f1419';
             btn.title = '评论屏蔽词';
@@ -172,7 +167,6 @@
         let blockedCount = 0;
 
         articles.forEach(article => {
-            // 已经处理过的，检查是否被我们隐藏
             if (article.dataset.blockProcessed === '1') {
                 if (article.dataset.blockedByScript === '1' || article.style.display === 'none') {
                     blockedCount++;
@@ -188,7 +182,6 @@
             article.dataset.blockProcessed = '1';
         });
 
-        // 额外再统计一次所有被我们隐藏的
         const allBlocked = document.querySelectorAll('article[data-testid="tweet"][data-blocked-by-script="1"]');
         updateButtonColor(allBlocked.length > 0 || blockedCount > 0);
     }
@@ -198,17 +191,18 @@
     });
 
     function startObserver() {
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
+        if (document.body) {
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        }
         processArticles();
     }
 
     function createPanel() {
         if (document.getElementById('x-block-btn')) return;
 
-        // ===== 浮动按钮 =====
         const btn = document.createElement('div');
         btn.id = 'x-block-btn';
         btn.title = '评论屏蔽词';
@@ -248,7 +242,6 @@
         btn.addEventListener('mouseleave', () => {
             btn.style.transform = 'scale(1)';
             btn.style.boxShadow = '0 1px 3px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.08)';
-            // 颜色由 updateButtonColor 控制，这里不强制改
             if (!hasBlockedOnPage) {
                 btn.style.background = '#ffffff';
             }
@@ -256,7 +249,6 @@
 
         document.body.appendChild(btn);
 
-        // ===== 面板 =====
         const panel = document.createElement('div');
         panel.id = 'x-block-panel';
         panel.style.cssText = `
@@ -284,7 +276,6 @@
                 <span id="x-block-close" style="cursor:pointer;font-size:22px;line-height:1;color:#8b98a5;">×</span>
             </div>
 
-            <!-- Tab 切换 -->
             <div style="display:flex;gap:0;margin-bottom:12px;border-bottom:1px solid #38444d;flex-shrink:0;">
                 <div id="x-tab-user" class="x-tab active" data-tab="user"
                     style="flex:1;text-align:center;padding:8px 0;cursor:pointer;font-size:14px;font-weight:600;color:#1d9bf0;border-bottom:2px solid #1d9bf0;">
@@ -296,10 +287,8 @@
                 </div>
             </div>
 
-            <!-- 列表区域（可滚动） -->
             <div id="x-block-list" style="flex:1;overflow-y:auto;margin-bottom:12px;min-height:60px;max-height:180px;"></div>
 
-            <!-- 添加区域 -->
             <div style="flex-shrink:0;">
                 <div style="display:flex;gap:8px;margin-bottom:10px;">
                     <input id="x-block-input" type="text" placeholder="输入屏蔽词"
@@ -311,7 +300,6 @@
                 </button>
             </div>
 
-            <!-- 匹配用户区域 -->
             <div style="border-top:1px solid #38444d;padding-top:12px;flex-shrink:0;">
                 <button id="x-show-matched"
                     style="width:100%;padding:10px;background:#192734;border:1px solid #38444d;border-radius:9999px;color:#e7e9ea;font-weight:600;cursor:pointer;font-size:14px;">
@@ -358,8 +346,9 @@
                     display:flex;justify-content:space-between;align-items:center;
                     padding:8px 0;border-bottom:1px solid #38444d;font-size:14px;
                 `;
+                const safeWord = item.word.replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 row.innerHTML = `
-                    <span style="word-break:break-all;">${item.word}</span>
+                    <span style="word-break:break-all;">${safeWord}</span>
                     <span class="x-del" data-idx="${realIndex}" style="color:#f4212e;cursor:pointer;font-size:13px;padding:2px 6px;flex-shrink:0;">删除</span>
                 `;
                 list.appendChild(row);
@@ -371,7 +360,6 @@
                     blockWords.splice(i, 1);
                     saveWords(blockWords);
                     renderList();
-                    // 重新扫描
                     document.querySelectorAll('article[data-testid="tweet"]').forEach(a => {
                         a.dataset.blockProcessed = '';
                         a.dataset.blockedByScript = '';
@@ -408,7 +396,7 @@
                 if (shouldHide(article) || article.dataset.blockedByScript === '1') {
                     const info = getUserInfo(article);
                     if (!info || !info.pureHandle) return;
-                    if (reallyBlockedHandles.has(info.pureHandle)) return; // 已经真正屏蔽过，不再重复显示
+                    if (reallyBlockedHandles.has(info.pureHandle)) return;
                     matchedList.push(info);
                 }
             });
@@ -426,7 +414,6 @@
             title.textContent = `共找到 ${matchedList.length} 条匹配评论：`;
             matchedContainer.appendChild(title);
 
-            // 移除某一行后，刷新计数 / 空状态提示
             function refreshMatchedState() {
                 const remaining = matchedContainer.querySelectorAll('.x-real-block').length;
                 if (remaining === 0) {
@@ -448,11 +435,12 @@
                 `;
 
                 const safeContent = (info.content || '(无文字内容)').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const safeDisplayName = (info.displayName || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
                 row.innerHTML = `
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;">
                         <div style="flex:1;overflow:hidden;">
-                            <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${info.displayName}</div>
+                            <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${safeDisplayName}</div>
                             <div style="color:#8b98a5;font-size:12px;">${info.handle}</div>
                         </div>
                         <button class="x-real-block" data-handle="${info.pureHandle}"
@@ -483,11 +471,9 @@
                         blockBtn.textContent = '已屏蔽';
                         blockBtn.style.background = '#00ba7c';
 
-                        // 记录为"已真正屏蔽"，避免下次扫描又把该用户列出来
                         reallyBlockedHandles.add(handle);
                         saveReallyBlocked(reallyBlockedHandles);
 
-                        // 短暂展示"已屏蔽"状态后，淡出并移除这条记录
                         setTimeout(() => {
                             row.style.opacity = '0';
                             row.style.maxHeight = '0px';

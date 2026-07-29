@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         GitHub RSS & Inoreader Helper
 // @namespace    http://tampermonkey.net/
-// @version      1.0
-// @description  兼容 GitHub 2026 最新 UI
+// @version      1.1
+// @description  在 GitHub 仓库侧边栏注入 RSS 订阅区域（Tags/Releases/Issues/Commits），支持一键导入 Inoreader 和快捷复制 Feed 链接
 // @author       GeBron
 // @match        https://github.com/*/*
 // @grant        GM_setValue
@@ -12,10 +12,10 @@
 // @run-at       document-end
 // ==/UserScript==
 
-(function() {
+(function () {
     'use strict';
 
-    // 优化样式：增加分割线和原生字体间距
+    // 样式配置：增加分割线和原生 CSS 变量适配
     GM_addStyle(`
         #github-rss-helper { 
             padding-top: 16px;
@@ -37,7 +37,7 @@
         .rss-label { 
             font-size: 12px; 
             font-weight: 500; 
-            color: var(--color-fg-default); 
+            color: var(--color-fg-default, #1f2328); 
         }
         .rss-btns { 
             display: flex; 
@@ -75,8 +75,6 @@
     ];
 
     // GitHub 仓库子页面的第二级路径关键字（/owner/repo/<subpage>/...）
-    // 注意：仓库主页是 /owner/repo 或 /owner/repo/tree/xxx、/owner/repo/blob/xxx 等，
-    // 这些不应被过滤掉，只有明确的功能性子页面才需要跳过。
     const SUBPAGE_BLACKLIST = [
         'settings', 'pulls', 'issues', 'actions', 'projects',
         'security', 'insights', 'wiki', 'pulse', 'graphs',
@@ -84,8 +82,7 @@
     ];
 
     function isRepoSubpage(pathParts) {
-        // pathParts[0] = owner, pathParts[1] = repo, pathParts[2] = 子页面（如果存在）
-        if (pathParts.length <= 2) return false; // /owner/repo 本身，视为主页
+        if (pathParts.length <= 2) return false;
         return SUBPAGE_BLACKLIST.includes(pathParts[2]);
     }
 
@@ -96,24 +93,17 @@
         if (pathParts.length < 2) return;
         const [owner, repo] = pathParts;
 
-        // 修复：原逻辑误判 repo 名称本身，而不是子页面路径段
         if (isRepoSubpage(pathParts)) return;
 
         // 定位侧边栏
-        // 2026 版 GitHub 改用 Primer 的 SplitPageLayout 组件系统，样式类名（如 prc-PageLayout-Pane-xxxxx、
-        // CodeViewSidebar-module__xxxxx）都是随构建哈希变化的 CSS Modules 类名，不能作为选择器依赖。
-        // data-component / data-position 是语义化属性，不会随构建哈希变化，是目前最稳定的锚点。
         const sidebar =
             document.querySelector('div[data-position="end"] [data-component="SplitPageLayout.Pane"]') ||
-            // 兼容旧版结构（如果 GitHub 对部分页面/账号灰度回退到旧 UI）
             document.querySelector('aside[aria-label="Repository sidebar"]') ||
             document.querySelector('.Layout-sidebar') ||
             document.querySelector('.BorderGrid')?.parentElement ||
             document.querySelector('div[data-testid="sidebar"]');
 
         if (!sidebar) {
-            // 兜底提示：方便在 GitHub 改版导致选择器失效时快速定位问题
-            console.warn('[GitHub RSS Helper] 未找到侧边栏容器，可能是页面结构已变化，脚本暂时无法注入。');
             return;
         }
 
@@ -151,7 +141,7 @@
 
             const copyBtn = document.createElement('button');
             copyBtn.className = 'rss-btn copy-rss';
-            copyBtn.dataset.url = url; // 通过 DOM API 赋值，避免拼接字符串的转义问题
+            copyBtn.dataset.url = url;
             copyBtn.textContent = 'Copy';
 
             btns.appendChild(inoreaderLink);
@@ -163,10 +153,9 @@
 
         if (!hasActive) return;
 
-        // 插入到侧边栏最后
         sidebar.appendChild(container);
 
-        // 绑定复制事件（修复：正确处理 clipboard 的异步结果）
+        // 绑定复制事件
         container.querySelectorAll('.copy-rss').forEach(btn => {
             btn.onclick = (e) => {
                 e.preventDefault();
@@ -190,7 +179,6 @@
     }
 
     // 菜单管理
-    // 默认值说明：除 Commits 外均默认开启（Commits 更新过于频繁，默认关闭以减少噪音）
     FEED_TYPES.forEach(type => {
         if (GM_getValue(type.id) === undefined) GM_setValue(type.id, type.id !== 'show_commits');
         GM_registerMenuCommand(`${GM_getValue(type.id) ? '✅' : '❌'} ${type.label}`, () => {
@@ -199,9 +187,6 @@
         });
     });
 
-    // 监控页面动态变化
-    // GitHub 前端基于 Turbo (Hotwired)，SPA 式跳转会派发 turbo:load 事件，
-    // 优先使用该事件精准触发注入，避免全局 MutationObserver 带来的性能开销。
     let timer = null;
     const scheduleInject = () => {
         clearTimeout(timer);
@@ -210,9 +195,8 @@
 
     document.addEventListener('turbo:load', scheduleInject);
     document.addEventListener('turbo:render', scheduleInject);
-    document.addEventListener('pjax:end', scheduleInject); // 兼容旧版 GitHub 前端
+    document.addEventListener('pjax:end', scheduleInject);
 
-    // 兜底：以防 Turbo 事件在某些场景未覆盖，监听范围收窄到主内容区域而非整个 body
     const mainContent =
         document.querySelector('#js-repo-pjax-container') ||
         document.querySelector('main') ||

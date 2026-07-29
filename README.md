@@ -6,12 +6,14 @@
 
 | 脚本 | 版本 | 适用站点 | 功能简介 |
 |------|------|----------|----------|
-| [4d4y-newbab.js](./4d4y-newbab.js) | 1.0 | 4d4y 论坛 | 帖子标题点击新标签页打开 |
-| [cnblogs-plus.js](./cnblogs-plus.js) | 1.0 | 博客园 | 自动展开代码块 + 标题新标签页打开 |
-| [github-rss-inoreader-helper.js](./github-rss-inoreader-helper.js) | 1.0 | GitHub | 仓库侧边栏注入 RSS 订阅按钮，支持一键导入 Inoreader |
-| [hupu-plus.js](./hupu-plus.js) | 1.0 | 虎扑 | 手机版自动跳转网页版 + 回帖表情包自动缩小 |
-| [x-bird-logo.js](./x-bird-logo.js) | 1.0 | X (Twitter) | 修复用户名小鸟图标无法显示的问题 |
-| [x-time.js](./x-time.js) | 1.0 | X (Twitter) | 动态时间格式化（今天/今年/往年） |
+| [4d4y-open-in-new-tab.js](./4d4y-open-in-new-tab.js) | 1.1 | 4D4Y 论坛 | 帖子标题点击在新标签页打开 |
+| [cnblogs-plus.js](./cnblogs-plus.js) | 1.1 | 博客园 | 自动展开代码块 + 文章标题新标签页打开 |
+| [github-rss-inoreader-helper.js](./github-rss-inoreader-helper.js) | 1.1 | GitHub | 侧边栏注入 RSS 订阅区域，支持一键导入 Inoreader & 复制 URL |
+| [hupu-plus.js](./hupu-plus.js) | 1.1 | 虎扑 | 手机版自动跳转 PC 网页版 + 回帖表情包自动缩小 |
+| [x-bird-logo.js](./x-bird-logo.js) | 1.1 | X (Twitter) | 修复用户名小鸟图标 (U+EA00) 方块显示问题 |
+| [x-quick-block.js](./x-quick-block.js) | 1.1 | X (Twitter) | 将评论区 Grok 图标替换为快捷一键屏蔽按钮 |
+| [x-comment-filter.js](./x-comment-filter.js) | 1.1 | X (Twitter) | 按用户名/内容关键词过滤评论，支持面板管理与 API 真实屏蔽 |
+| [x-time.js](./x-time.js) | 1.1 | X (Twitter) | 动态绝对时间格式化（今天/今年/往年） |
 
 ## 安装方式
 
@@ -23,16 +25,16 @@
 
 ## 脚本详情
 
-### 4D4Y 帖子新标签页打开
+### 4D4Y 论坛帖子新标签页打开
 
-- **文件**: `4d4y-newbab.js`
+- **文件**: `4d4y-open-in-new-tab.js`
 - **匹配**: `*://www.4d4y.com/forum/forumdisplay.php*`
 
-强制 4d4y 论坛帖子列表中的标题链接在新标签页打开，避免覆盖当前页面。为链接添加 `target="_blank"` 和 `rel="noopener noreferrer"`。
+强制 4D4Y 论坛帖子列表中的标题链接在新标签页打开，避免覆盖当前页面。为链接添加 `target="_blank"` 和 `rel="noopener noreferrer"`，支持 `MutationObserver` 适配动态加载。
 
 ---
 
-### 博客园增强：自动展开代码 + 标题新标签页打开
+### 博客园体验增强 (Cnblogs Plus)
 
 - **文件**: `cnblogs-plus.js`
 - **匹配**: `*://www.cnblogs.com/*`
@@ -64,11 +66,11 @@
 - **Inoreader** — 一键跳转到 Inoreader 订阅页面
 - **Copy** — 复制 RSS 链接到剪贴板
 
-通过 Tampermonkey 菜单可逐项开关各 Feed 类型。兼容 GitHub 2026 最新 UI（基于 `data-component` / `data-position` 语义化属性定位，不依赖构建哈希变化的 CSS Modules 类名）。
+通过 Tampermonkey 菜单可逐项开关各 Feed 类型。兼容 GitHub 最新 UI（基于 `data-component` / `data-position` 语义化属性定位，不依赖构建哈希变化的 CSS Modules 类名）。
 
 ---
 
-### 虎扑：手机版自动跳转网页版 + 回帖表情包自动缩小
+### 虎扑体验增强 (Hupu Plus)
 
 - **文件**: `hupu-plus.js`
 - **匹配**: `*://m.hupu.com/bbs-share/*`、`*://m.hupu.com/bbs/*`、`https://bbs.hupu.com/*`
@@ -80,7 +82,7 @@
 
 ---
 
-### X (Twitter) 官方小鸟图标修复 / Chirp Bird Glyph Fix
+### X (Twitter) 官方小鸟图标修复
 
 - **文件**: `x-bird-logo.js`
 - **匹配**: `https://x.com/*`、`https://twitter.com/*`
@@ -95,7 +97,25 @@
 
 ---
 
-### X (Twitter) 动态时间格式化
+### X (Twitter) 评论区一键屏蔽
+
+- **文件**: `x-quick-block.js`
+- **匹配**: `https://x.com/*/status/*`、`https://twitter.com/*/status/*`
+
+在推文详情页将评论区的 Grok 图标替换为同尺寸同风格的一键屏蔽按钮。点击后自动触发推文菜单并确认屏蔽，实现高效快筛垃圾评论用户。
+
+---
+
+### X (Twitter) 评论关键词过滤与一键屏蔽
+
+- **文件**: `x-comment-filter.js`
+- **匹配**: `https://x.com/*/status/*`、`https://twitter.com/*/status/*`
+
+支持按用户名与评论内容自定义关键词隐藏垃圾评论。提供右下角悬浮管理面板，支持实时添加/删除屏蔽词、查看当前页面被匹配的评论用户，并可直接调用 X 官方 API 一键发起真正账号屏蔽。
+
+---
+
+### X (Twitter) 动态绝对时间格式化
 
 - **文件**: `x-time.js`
 - **匹配**: `https://x.com/*`、`https://twitter.com/*`

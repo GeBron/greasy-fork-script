@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         X.com 评论区 Grok 图标替换为快速屏蔽
+// @name         X (Twitter) 评论区一键屏蔽
 // @namespace    http://tampermonkey.net/
-// @version      1.0
-// @description  仅在推文详情页，把评论区 Grok 图标替换为同尺寸同风格的快速屏蔽按钮
+// @version      1.1
+// @description  将 X (Twitter) 推文详情页评论区的 Grok 图标替换为同尺寸同风格的一键屏蔽按钮，点击即可快速屏蔽对应用户
 // @author       GeBron
 // @match        https://x.com/*/status/*
 // @match        https://twitter.com/*/status/*
@@ -123,24 +123,20 @@
 
             grokBtn.setAttribute(PROCESSED_ATTR, '1');
 
-            // 只替换内部 SVG，保留原按钮的所有 class、尺寸、边框、padding
             const svgContainer = grokBtn.querySelector('svg')?.parentElement || grokBtn;
-            // 清空原有内容后插入新图标
             while (svgContainer.firstChild) {
                 svgContainer.removeChild(svgContainer.firstChild);
             }
             svgContainer.insertAdjacentHTML('beforeend', BLOCK_SVG);
 
-            // 更新提示文字
             grokBtn.setAttribute('aria-label', '快速屏蔽此用户');
             grokBtn.title = '快速屏蔽此用户';
 
-            // 拦截点击，改为执行屏蔽
             grokBtn.addEventListener('click', function (e) {
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 quickBlock(article, grokBtn);
-            }, true); // 使用捕获阶段，确保优先拦截
+            }, true);
         });
     }
 
@@ -149,9 +145,10 @@
     const observer = new MutationObserver(() => {
         processGrokButtons();
     });
-    observer.observe(document.body, { childList: true, subtree: true });
+    if (document.body) {
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
 
-    // SPA 路由变化监听
     let lastPath = location.pathname;
     setInterval(() => {
         if (location.pathname !== lastPath) {
@@ -160,5 +157,5 @@
         }
     }, 800);
 
-    console.log('[X Quick Block] v1.4 原尺寸复用模式已加载');
+    console.log('[X Quick Block] v1.1 已加载');
 })();

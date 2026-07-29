@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         博客园增强：自动展开代码 + 标题新标签页打开
+// @name         博客园体验增强 (Cnblogs Plus)
 // @namespace    http://tampermonkey.net/
-// @version      1.0
-// @description  自动展开博客园折叠的代码块，并让博主主页的文章标题在新标签页打开
+// @version      1.1
+// @description  自动展开博客园折叠的代码块，并使文章标题链接在点击时于新标签页打开
 // @author       GeBron
 // @match        *://www.cnblogs.com/*
 // @grant        none
@@ -16,11 +16,15 @@
     // 功能一：自动展开折叠状态的代码块
     // ---------------------------------------------------------------
     function expandCode() {
-        const expandButtons = document.querySelectorAll('.code_img_closed');
+        const expandButtons = document.querySelectorAll('.code_img_closed, .cnblogs_code_hide');
         expandButtons.forEach(btn => {
-            btn.click();
-            // 修改类名防止重复点击
-            btn.classList.replace('code_img_closed', 'code_img_opened');
+            if (btn.classList.contains('code_img_closed')) {
+                btn.click();
+                btn.classList.replace('code_img_closed', 'code_img_opened');
+            } else if (btn.classList.contains('cnblogs_code_hide')) {
+                btn.click();
+                btn.classList.remove('cnblogs_code_hide');
+            }
         });
     }
 
@@ -35,6 +39,7 @@
         '.postTitle a',          // 常用模板
         '.postTitle2',           // 常用模板2
         '.entrylistPosttitle a', // 随笔列表模板
+        '.post-item-title',      // 新版列表模板
         '#cb_post_title_url'     // 文章详情页标题
     ];
 
@@ -42,7 +47,7 @@
         if (isCnblogsHomePage) return;
         titleSelectors.forEach(selector => {
             document.querySelectorAll(selector).forEach(link => {
-                if (link.tagName === 'A') {
+                if (link.tagName === 'A' && link.getAttribute('target') !== '_blank') {
                     link.setAttribute('target', '_blank');
                     link.setAttribute('rel', 'noopener noreferrer');
                 }
@@ -71,18 +76,16 @@
     // ---------------------------------------------------------------
     // 初始化
     // ---------------------------------------------------------------
-    // 1. 页面加载后立即执行一次
     runAll();
     window.addEventListener('load', runAll);
 
-    // 2. 监听 DOM 变化（覆盖异步加载 / 无限滚动等场景），比固定轮询更可靠
     const observer = new MutationObserver(debouncedRunAll);
     observer.observe(document.body || document.documentElement, {
         childList: true,
         subtree: true
     });
 
-    // 3. 兜底：有限次数的轮询，覆盖 MutationObserver 可能遗漏的极端情况
+    // 兜底：有限次数轮询，覆盖延迟渲染/异步代码块
     let count = 0;
     const timer = setInterval(() => {
         runAll();
