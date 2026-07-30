@@ -11,8 +11,6 @@
 | [github-rss-inoreader-helper.js](./github-rss-inoreader-helper.js) | 1.1 | GitHub | 侧边栏注入 RSS 订阅区域，支持一键导入 Inoreader & 复制 URL |
 | [hupu-plus.js](./hupu-plus.js) | 1.1 | 虎扑 | 手机版自动跳转 PC 网页版 + 回帖表情包自动缩小 |
 | [x-bird-logo.js](./x-bird-logo.js) | 1.1 | X (Twitter) | 修复用户名小鸟图标 (U+EA00) 方块显示问题 |
-| [x-quick-block.js](./x-quick-block.js) | 1.1 | X (Twitter) | 将评论区 Grok 图标替换为快捷一键屏蔽按钮 |
-| [x-comment-filter.js](./x-comment-filter.js) | 1.1 | X (Twitter) | 按用户名/内容关键词过滤评论，支持面板管理与 API 真实屏蔽 |
 | [x-time.js](./x-time.js) | 1.1 | X (Twitter) | 动态绝对时间格式化（今天/今年/往年） |
 
 ## 安装方式
@@ -94,24 +92,6 @@
 - 主动预加载字体，避免首次渲染时方块字符来不及替换
 - 字体放在 `font-family` 最前面，防止其他图标字体截胡该码位
 - 监听 `MutationObserver`（childList + characterData）、路由变化（History API）、低频定时扫描，覆盖虚拟滚动列表复用和页面切换场景
-
----
-
-### X (Twitter) 评论区一键屏蔽
-
-- **文件**: `x-quick-block.js`
-- **匹配**: `https://x.com/*/status/*`、`https://twitter.com/*/status/*`
-
-在推文详情页将评论区的 Grok 图标替换为同尺寸同风格的一键屏蔽按钮。点击后自动触发推文菜单并确认屏蔽，实现高效快筛垃圾评论用户。
-
----
-
-### X (Twitter) 评论关键词过滤与一键屏蔽
-
-- **文件**: `x-comment-filter.js`
-- **匹配**: `https://x.com/*/status/*`、`https://twitter.com/*/status/*`
-
-支持按用户名与评论内容自定义关键词隐藏垃圾评论。提供右下角悬浮管理面板，支持实时添加/删除屏蔽词、查看当前页面被匹配的评论用户，并可直接调用 X 官方 API 一键发起真正账号屏蔽。
 
 ---
 
