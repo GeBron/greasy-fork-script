@@ -7,7 +7,8 @@
 | 脚本 | 版本 | 适用站点 | 功能简介 |
 |------|------|----------|----------|
 | [4d4y-open-in-new-tab.js](./4d4y-open-in-new-tab.js) | 1.1 | 4D4Y 论坛 | 帖子标题点击在新标签页打开 |
-| [cnblogs-plus.js](./cnblogs-plus.js) | 1.1 | 博客园 | 自动展开代码块 + 文章标题新标签页打开 |
+| [cnblogs-plus.js](./cnblogs-plus.js) | 1.2 | 博客园 | 自动展开代码块 + 文章标题新标签页打开 |
+| [doubao-image-download.js](./doubao-image-download.js) | 1.1 | 豆包/Dola | 无水印图片下载（悬停按钮 + 右键菜单） |
 | [github-rss-inoreader-helper.js](./github-rss-inoreader-helper.js) | 1.1 | GitHub | 侧边栏注入 RSS 订阅区域，支持一键导入 Inoreader & 复制 URL |
 | [hupu-plus.js](./hupu-plus.js) | 1.1 | 虎扑 | 手机版自动跳转 PC 网页版 + 回帖表情包自动缩小 |
 | [x-bird-logo.js](./x-bird-logo.js) | 1.1 | X (Twitter) | 修复用户名小鸟图标 (U+EA00) 方块显示问题 |
@@ -43,6 +44,26 @@
 2. **标题新标签页打开** — 博主主页的文章标题链接在新标签页打开（官方首页跳过此功能，但代码展开仍然生效）。
 
 通过 `MutationObserver` + 防抖 + 有限轮询三重保障，覆盖异步加载和无限滚动场景。
+
+---
+
+### 豆包/Dola 无水印图片下载
+
+- **文件**: `doubao-image-download.js`
+- **匹配**: `*://*.doubao.com/*`、`*://*.dola.com/*`、`*://*.cici.com/*` 等
+- **来源**: adapted from Qalxry (GPL-3.0)
+
+为豆包与国际版 Dola 生成的图片提供无水印下载：
+
+1. **悬停按钮** — 鼠标悬停到候选图片/画布上时，右上角浮现「⬇ 无水印」按钮，点击即下载。
+2. **右键菜单** — 右键图片后在站点菜单中注入「下载无水印原图」项。
+
+实现亮点：
+- 通过 React Fiber 内部属性（`__reactFiber$`）递归扫描 props，从渲染层提取原始图片地址，跨提升大小而无需依赖易变的站点选择器。
+- 直链可用（无 `watermark`/`wm`/`mark` 参数）时直接下载；否则利用预览图与下载底图「左上角区域重叠」特点，通过 `canvas` 拼合去水印。
+- 支持图片识别与文件格式（jpg/png/webp/gif/avif）自动匹配扩展名。
+- 借助 `GM_xmlhttpRequest` + `@connect *` 跨域拉取原图，避免页面 CORS 限制。
+- 悬停/右键均优先定位当前预览图中「可见、居中、面积最大」的活动图片。
 
 ---
 
