@@ -6,12 +6,12 @@
 
 | 脚本 | 版本 | 适用站点 | 功能简介 |
 |------|------|----------|----------|
-| [4d4y-open-in-new-tab.js](./4d4y-open-in-new-tab.js) | 1.1 | 4D4Y 论坛 | 帖子标题点击在新标签页打开 |
-| [cnblogs-plus.js](./cnblogs-plus.js) | 1.2 | 博客园 | 自动展开代码块 + 文章标题新标签页打开 |
-| [github-rss-inoreader-helper.js](./github-rss-inoreader-helper.js) | 1.1 | GitHub | 侧边栏注入 RSS 订阅区域，支持一键导入 Inoreader & 复制 URL |
-| [hupu-plus.js](./hupu-plus.js) | 1.1 | 虎扑 | 手机版自动跳转 PC 网页版 + 回帖表情包自动缩小 |
-| [x-bird-logo.js](./x-bird-logo.js) | 1.1 | X (Twitter) | 修复用户名小鸟图标 (U+EA00) 方块显示问题 |
-| [x-time.js](./x-time.js) | 1.1 | X (Twitter) | 动态绝对时间格式化（今天/今年/往年） |
+| [4d4y-open-in-new-tab.js](./4d4y-open-in-new-tab.js) | 1.2 | 4D4Y 论坛 | 帖子标题点击在新标签页打开 |
+| [cnblogs-plus.js](./cnblogs-plus.js) | 1.3 | 博客园 | 自动展开代码块 + 文章标题新标签页打开 |
+| [github-rss-inoreader-helper.js](./github-rss-inoreader-helper.js) | 1.2 | GitHub | 侧边栏注入 RSS 订阅区域，支持一键导入 Inoreader & 复制 URL |
+| [hupu-plus.js](./hupu-plus.js) | 1.2 | 虎扑 | 手机版自动跳转 PC 网页版 + 回帖表情包自动缩小 |
+| [x-bird-logo.js](./x-bird-logo.js) | 1.2 | X (Twitter) | 修复用户名小鸟图标 (U+EA00) 方块显示问题 |
+| [x-time.js](./x-time.js) | 1.2 | X (Twitter) | 动态绝对时间格式化（今天/今年/往年） |
 
 ## 安装方式
 
@@ -42,7 +42,7 @@
 1. **自动展开代码块** — 博客园折叠状态的代码块自动点击展开，无需手动逐个点击。
 2. **标题新标签页打开** — 博主主页的文章标题链接在新标签页打开（官方首页跳过此功能，但代码展开仍然生效）。
 
-通过 `MutationObserver` + 防抖 + 有限轮询三重保障，覆盖异步加载和无限滚动场景。
+通过 `MutationObserver` + 防抖，覆盖异步加载和无限滚动场景。
 
 ---
 
@@ -51,7 +51,7 @@
 - **文件**: `github-rss-inoreader-helper.js`
 - **匹配**: `https://github.com/*/*`
 
-在 GitHub 仓库页面的右侧边栏注入 RSS 订阅区域，支持四种 Feed：
+在 GitHub 仓库根页面（`/owner/repo`）的右侧边栏注入 RSS 订阅区域（blob/tree/pull 等子页面不注入），支持四种 Feed：
 
 | Feed | URL 后缀 | 默认状态 |
 |------|----------|----------|
@@ -91,7 +91,7 @@
 - 引用 X 官方 Chirp 字体，限定 `unicode-range: U+EA00`
 - 主动预加载字体，避免首次渲染时方块字符来不及替换
 - 字体放在 `font-family` 最前面，防止其他图标字体截胡该码位
-- 监听 `MutationObserver`（childList + characterData）、路由变化（History API）、低频定时扫描，覆盖虚拟滚动列表复用和页面切换场景
+- 监听 `MutationObserver`（childList + characterData）与路由变化（History API），覆盖虚拟滚动列表复用和页面切换场景
 
 ---
 
@@ -114,7 +114,8 @@ X 客户端会周期性地把时间重写回相对格式（如 "5m" → "6m"）�
 
 - 所有脚本均使用 IIFE 封装，不污染全局作用域
 - 动态内容通过 `MutationObserver` 实时处理，适配 SPA 和异步加载
-- 关键场景搭配防抖、轮询兜底，确保可靠性
+- 高频回调统一防抖，避免不必要的全量 DOM 扫描
+- 统一添加 `@noframes`，脚本不会在 iframe 中重复执行
 - 兼容各站点最新 UI 变化
 
 ## 作者
