@@ -1,14 +1,17 @@
 // ==UserScript==
 // @name         X (Twitter) 官方小鸟图标修复
 // @namespace    http://tampermonkey.net/
-// @version      1.1
+// @version      1.2
 // @description  修复 Windows 等系统上 X (Twitter) 用户名缺失 Chirp 字体导致的 U+EA00 小鸟图标显示为方块的问题
 // @author       GeBron
 // @match        https://x.com/*
 // @match        https://twitter.com/*
 // @grant        none
 // @run-at       document-idle
+// @noframes
 // @license      MIT
+// @updateURL    https://raw.githubusercontent.com/GeBron/greasy-fork-script/master/x-bird-logo.js
+// @downloadURL  https://raw.githubusercontent.com/GeBron/greasy-fork-script/master/x-bird-logo.js
 // ==/UserScript==
 
 (function () {
@@ -98,8 +101,6 @@
       subtree: true,
       characterData: true,
     });
-
-    setInterval(() => scanAndFix(document.body), 800);
 
     function triggerRescan() {
       [100, 300, 600, 1200].forEach((delay) => {
