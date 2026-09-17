@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub RSS & Inoreader Helper
 // @namespace    http://tampermonkey.net/
-// @version      1.1
+// @version      1.2
 // @description  在 GitHub 仓库侧边栏注入 RSS 订阅区域（Tags/Releases/Issues/Commits），支持一键导入 Inoreader 和快捷复制 Feed 链接
 // @author       GeBron
 // @match        https://github.com/*/*
@@ -10,6 +10,10 @@
 // @grant        GM_registerMenuCommand
 // @grant        GM_addStyle
 // @run-at       document-end
+// @noframes
+// @license      MIT
+// @updateURL    https://raw.githubusercontent.com/GeBron/greasy-fork-script/master/github-rss-inoreader-helper.js
+// @downloadURL  https://raw.githubusercontent.com/GeBron/greasy-fork-script/master/github-rss-inoreader-helper.js
 // ==/UserScript==
 
 (function () {
@@ -68,32 +72,19 @@
     `);
 
     const FEED_TYPES = [
-        { id: 'show_tags', label: 'Tags', suffix: 'tags.atom' },
-        { id: 'show_releases', label: 'Releases', suffix: 'releases.atom' },
-        { id: 'show_issues', label: 'Issues', suffix: 'issues.atom' },
-        { id: 'show_commits', label: 'Commits', suffix: 'commits.atom' }
+        { id: 'show_tags', label: 'Tags', suffix: 'tags.atom', defaultEnabled: true },
+        { id: 'show_releases', label: 'Releases', suffix: 'releases.atom', defaultEnabled: true },
+        { id: 'show_issues', label: 'Issues', suffix: 'issues.atom', defaultEnabled: true },
+        { id: 'show_commits', label: 'Commits', suffix: 'commits.atom', defaultEnabled: false }
     ];
-
-    // GitHub 仓库子页面的第二级路径关键字（/owner/repo/<subpage>/...）
-    const SUBPAGE_BLACKLIST = [
-        'settings', 'pulls', 'issues', 'actions', 'projects',
-        'security', 'insights', 'wiki', 'pulse', 'graphs',
-        'network', 'community', 'discussions'
-    ];
-
-    function isRepoSubpage(pathParts) {
-        if (pathParts.length <= 2) return false;
-        return SUBPAGE_BLACKLIST.includes(pathParts[2]);
-    }
 
     function inject() {
         if (document.getElementById('github-rss-helper')) return;
 
+        // 仅在仓库根页面（/owner/repo）注入，白名单方式避免覆盖 blob/tree/pull 等子页面
         const pathParts = window.location.pathname.split('/').filter(Boolean);
-        if (pathParts.length < 2) return;
+        if (pathParts.length !== 2) return;
         const [owner, repo] = pathParts;
-
-        if (isRepoSubpage(pathParts)) return;
 
         // 定位侧边栏
         const sidebar =
@@ -118,7 +109,7 @@
 
         let hasActive = false;
         FEED_TYPES.forEach(feed => {
-            if (GM_getValue(feed.id) === false) return;
+            if (!GM_getValue(feed.id, feed.defaultEnabled)) return;
             hasActive = true;
             const url = `https://github.com/${owner}/${repo}/${feed.suffix}`;
 
@@ -180,9 +171,9 @@
 
     // 菜单管理
     FEED_TYPES.forEach(type => {
-        if (GM_getValue(type.id) === undefined) GM_setValue(type.id, type.id !== 'show_commits');
-        GM_registerMenuCommand(`${GM_getValue(type.id) ? '✅' : '❌'} ${type.label}`, () => {
-            GM_setValue(type.id, !GM_getValue(type.id));
+        const enabled = GM_getValue(type.id, type.defaultEnabled);
+        GM_registerMenuCommand(`${enabled ? '✅' : '❌'} ${type.label}`, () => {
+            GM_setValue(type.id, !GM_getValue(type.id, type.defaultEnabled));
             location.reload();
         });
     });
