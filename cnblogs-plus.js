@@ -1,12 +1,16 @@
 // ==UserScript==
 // @name         博客园体验增强 (Cnblogs Plus)
 // @namespace    http://tampermonkey.net/
-// @version      1.2
+// @version      1.3
 // @description  自动展开博客园折叠的代码块，并使文章标题链接在点击时于新标签页打开
 // @author       GeBron
 // @match        *://www.cnblogs.com/*
 // @grant        none
 // @run-at       document-end
+// @noframes
+// @license      MIT
+// @updateURL    https://raw.githubusercontent.com/GeBron/greasy-fork-script/master/cnblogs-plus.js
+// @downloadURL  https://raw.githubusercontent.com/GeBron/greasy-fork-script/master/cnblogs-plus.js
 // ==/UserScript==
 
 (function () {
@@ -86,7 +90,6 @@
     // 初始化与页面监听
     // ---------------------------------------------------------------
     runAll();
-    window.addEventListener('load', runAll);
 
     // 监听 DOM 动态变更（覆盖异步渲染与动态加载内容）
     const observer = new MutationObserver(debouncedRunAll);
@@ -97,12 +100,4 @@
             subtree: true
         });
     }
-
-    // 有限次数轮询兜底
-    let count = 0;
-    const timer = setInterval(() => {
-        runAll();
-        count++;
-        if (count >= 5) clearInterval(timer);
-    }, 2000);
 })();
