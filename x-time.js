@@ -1,13 +1,17 @@
 // ==UserScript==
 // @name         X (Twitter) 动态绝对时间格式化
 // @namespace    http://tampermonkey.net/
-// @version      1.1
+// @version      1.2
 // @description  将 X (Twitter) 相对时间转化为精确绝对时间：今天 (HH:mm)、今年 (MM-DD HH:mm)、往年 (YYYY-MM-DD HH:mm)，防客户端覆写
 // @author       GeBron
 // @match        https://x.com/*
 // @match        https://twitter.com/*
 // @grant        none
 // @run-at       document-idle
+// @noframes
+// @license      MIT
+// @updateURL    https://raw.githubusercontent.com/GeBron/greasy-fork-script/master/x-time.js
+// @downloadURL  https://raw.githubusercontent.com/GeBron/greasy-fork-script/master/x-time.js
 // ==/UserScript==
 
 (function () {
